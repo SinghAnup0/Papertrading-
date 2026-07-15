@@ -1,0 +1,35 @@
+name: Fetch NSE Data (Artifact)
+
+on:
+  schedule:
+    # Runs Monday to Friday at 16:30 UTC (10:00 PM IST - well after market close)
+    - cron: '30 16 * * 1-5'
+  workflow_dispatch: # Allows you to trigger this manually from the GitHub UI
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jugaad-data pandas
+
+      - name: Run Python Script
+        run: python fetch_data.py
+
+      - name: Upload CSV Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nse-stock-data
+          path: data/
+          retention-days: 7 # Keeps the file downloadable for 7 days
