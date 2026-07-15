@@ -18,7 +18,7 @@ jobs:
         python-version: '3.10'
 
     - name: Install Request Middleware
-      run: pip install jugaad-data
+      run: pip install jugaad-data requests
 
     - name: Execute Python Cookie Exchange Fetch
       run: python fetch.py
