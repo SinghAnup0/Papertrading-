@@ -1,0 +1,32 @@
+name: NSE Python Live Sync Engine
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Auto-triggers every 10 minutes during market intervals
+  workflow_dispatch: # Gives you a manual "Run" button in GitHub Actions
+
+jobs:
+  execute-sync:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Codebase
+      uses: actions/checkout@v4
+
+    - name: Initialize Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Request Middleware
+      run: pip install requests
+
+    - name: Execute Python Cookie Exchange Fetch
+      run: python fetch.py
+
+    - name: Push Dynamic Payload to GitHub Pages Output
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add data.json
+        git commit -m "Python Automated Matrix Refreshed [Skip CI]" || exit 0
+        git push
