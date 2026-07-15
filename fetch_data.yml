@@ -1,0 +1,28 @@
+name: Sync Live NSE Option Chain Matrix
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Fires automatically every 5 minutes
+  workflow_dispatch: # Allows you to trigger it manually with a button click
+
+jobs:
+  update-matrix:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Codebase
+      uses: actions/checkout@v4
+
+    - name: Extract Clean Raw Payload from NSE
+      run: |
+        curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+             -H "Accept: application/json, text/plain, */*" \
+             -H "Accept-Language: en-US,en;q=0.9" \
+             "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY" > data.json
+
+    - name: Commit and Push Updated Payload to GitHub Pages
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add data.json
+        git commit -m "Automated update of live option chain matrix" || exit 0
+        git push
