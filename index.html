@@ -80,7 +80,6 @@
   </div>
 
   <div class="grid">
-    <!-- Live Chain Matrix -->
     <div class="card">
       <h3>Live Option Chain Matrix</h3>
       <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Establishing data stream pipeline...</div>
@@ -107,7 +106,6 @@
       </div>
     </div>
 
-    <!-- Storage Local Portfolio Counter -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3>My Local Positions</h3>
@@ -132,8 +130,8 @@
     document.getElementById('matrixLoader').style.display = "block";
     document.getElementById('tableWrapper').style.display = "none";
 
-    // Standard cross-origin proxy that bypasses security locks instantly for github pages
-    const proxyUrl = "https://corsproxy.io/?url=";
+    // Replaced with AllOrigins raw proxy format to support live domains like github.io
+    const proxyUrl = "https://api.allorigins.win/raw?url=";
     const targetUrl = `https://www.nseindia.com/api/option-chain-indices?symbol=${encodeURIComponent(symbol)}`;
 
     try {
@@ -155,7 +153,7 @@
 
       renderMatrixUI();
     } catch (err) {
-      document.getElementById('matrixLoader').innerHTML = `<span style="color:var(--put-color)">Failed to fetch live data. The NSE website might be down or throttling traffic. Please click refresh in a moment.</span>`;
+      document.getElementById('matrixLoader').innerHTML = `<span style="color:var(--put-color)">Failed to fetch live data. Please clear your cache and hit refresh in a moment.</span>`;
     }
   }
 
@@ -197,7 +195,6 @@
     document.getElementById('tableWrapper').style.display = "block";
   }
 
-  // Pure Local Browser Storage Engine
   function savePaperTrade(strike, type, price, action) {
     if(!price || price === '-') return alert("Price quote missing.");
     const symbol = document.getElementById('symbolSelect').value;
