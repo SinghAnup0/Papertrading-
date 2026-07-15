@@ -63,7 +63,7 @@
   <div class="grid">
     <div class="card">
       <h3>Live Option Chain Matrix (NIFTY)</h3>
-      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Reading repository bundle...</div>
+      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Reading local data payload...</div>
       <div id="tableWrapper" style="display:none; max-height: 600px; overflow-y: auto;">
         <table>
           <thead>
@@ -111,7 +111,7 @@
 
     try {
       const res = await fetch('./data.json?cache_bust=' + new Date().getTime());
-      if (!res.ok) throw new Error("JSON missing.");
+      if (!res.ok) throw new Error("Missing File");
       
       const data = await res.json();
       nseRawPayload = data;
@@ -129,8 +129,8 @@
       renderMatrixUI();
     } catch (err) {
       document.getElementById('matrixLoader').innerHTML = `
-        <span style="color:var(--put-color); font-weight:bold;">data.json generating...</span><br><br>
-        Please trigger the GitHub Action manually to start the first scrape.
+        <span style="color:var(--put-color); font-weight:bold;">Initializing options data storage...</span><br><br>
+        Please launch the GitHub Actions engine workflow manually to compile the initial option dataset.
       `;
     }
   }
@@ -154,13 +154,9 @@
       tr.innerHTML = `
         <td class="ce-zone">${ceOi}</td>
         <td class="ce-zone" style="font-weight:600; color:var(--call-color)">${ceLtp}</td>
-        <td class="ce-zone">
-          <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp},'BUY')">B</button>
-        </td>
+        <td class="ce-zone"><button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp})">B</button></td>
         <td class="strike-row">${strike}</td>
-        <td class="pe-zone">
-          <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','PE',${peLtp},'BUY')">B</button>
-        </td>
+        <td class="pe-zone"><button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','PE',${peLtp})">B</button></td>
         <td class="pe-zone" style="font-weight:600; color:var(--put-color)">${peLtp}</td>
         <td class="pe-zone">${peOi}</td>
       `;
@@ -171,10 +167,10 @@
     document.getElementById('tableWrapper').style.display = "block";
   }
 
-  function savePaperTrade(strike, type, price, action) {
-    if(!price || price === '-') return alert("Price quote missing.");
+  function savePaperTrade(strike, type, price) {
+    if(!price || price === '-') return alert("Invalid price execution quote.");
     let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    trades.push({ symbol: 'NIFTY', strike, type, entryPrice: price, action: 'BUY', time: new Date().toLocaleTimeString() });
+    trades.push({ symbol: 'NIFTY', strike, type, entryPrice: price });
     localStorage.setItem('local_portfolio', JSON.stringify(trades));
     renderPortfolio();
   }
