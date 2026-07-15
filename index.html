@@ -1,193 +1,291 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sensibull-Lite Proxy-Free Trader</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --bg-dark: #111827;
-      --card-bg: #1f2937;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --call-color: #059669;
-      --put-color: #dc2626;
-      --accent: #2563eb;
-    }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      margin: 0; padding: 20px;
-    }
-    .container { max-width: 1400px; margin: 0 auto; }
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding-bottom: 20px; border-bottom: 1px solid #374151;
-    }
-    .logo { font-size: 24px; font-weight: 700; color: var(--accent); }
-    .controls { display: flex; gap: 15px; margin: 20px 0; align-items: center; }
-    select, button {
-      background-color: var(--card-bg); color: white;
-      border: 1px solid #4b5563; padding: 10px 15px; border-radius: 6px; font-size: 14px; cursor: pointer;
-    }
-    button.btn-primary { background-color: var(--accent); border: none; }
-    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
-    th { background-color: #111827; color: var(--text-muted); padding: 10px; }
-    td { padding: 10px; border-bottom: 1px solid #374151; }
-    .strike-row { background-color: #111827; font-weight: bold; }
-    .ce-zone { background-color: rgba(5, 150, 105, 0.05); }
-    .pe-zone { background-color: rgba(220, 38, 38, 0.05); }
-    .action-btn { padding: 4px 10px; font-size: 11px; margin: 2px; border-radius: 4px; color: white; cursor:pointer;}
-    .buy-btn { background: var(--call-color); border: none; }
-    .sell-btn { background: var(--put-color); border: none; }
-    .loader { text-align: center; padding: 40px; font-size: 15px; color: var(--text-muted); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSE Paper Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
 
-<div class="container">
-  <header>
-    <div class="logo"><i class="fa-solid fa-chart-line"></i> Sensibull-Lite Native Trader</div>
-    <div id="underlying-price" style="font-weight:600;">Spot Price: Fetching JSON...</div>
-  </header>
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-emerald-400">📈 NSE Paper Trading</h1>
+            <div class="text-sm text-gray-400">
+                Prices updated at: <span id="last-update" class="font-semibold text-gray-200">Loading...</span>
+            </div>
+        </div>
+    </header>
 
-  <div class="controls">
-    <select id="expirySelect" onchange="renderMatrixUI()"></select>
-    <button class="btn-primary" onclick="loadLocalJson()"><i class="fa-solid fa-sync"></i> Refresh Matrix UI</button>
-  </div>
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Trade & Summary -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Summary Card -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h2 class="text-lg font-bold mb-4 text-gray-300 border-b border-gray-700 pb-2">💼 Portfolio Wallet</h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-400">Available Cash</p>
+                        <p id="wallet-cash" class="text-2xl font-extrabold text-white">₹10,00,000.00</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Portfolio Value</p>
+                        <p id="portfolio-value" class="text-2xl font-extrabold text-emerald-400">₹0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Total Net Worth</p>
+                        <p id="net-worth" class="text-3xl font-black text-indigo-400">₹10,00,000.00</p>
+                    </div>
+                </div>
+                <button onclick="resetPortfolio()" class="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition">Reset Game</button>
+            </div>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Live Option Chain Matrix (NIFTY)</h3>
-      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Reading local data payload...</div>
-      <div id="tableWrapper" style="display:none; max-height: 600px; overflow-y: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th colspan="3" style="color:var(--call-color)">CALLS (CE)</th>
-              <th>Strike</th>
-              <th colspan="3" style="color:var(--put-color)">PUTS (PE)</th>
-            </tr>
-            <tr>
-              <th>OI</th>
-              <th>LTP</th>
-              <th>Action</th>
-              <th>Strike Price</th>
-              <th>Action</th>
-              <th>LTP</th>
-              <th>OI</th>
-            </tr>
-          </thead>
-          <tbody id="optionChainBody"></tbody>
-        </table>
-      </div>
-    </div>
+            <!-- Trade Terminal -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h2 class="text-lg font-bold mb-4 text-gray-300 border-b border-gray-700 pb-2">🛒 Trade Terminal</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Select Asset</label>
+                        <select id="trade-symbol" onchange="updateTradePrice()" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Current Price:</span>
+                        <span id="current-asset-price" class="font-bold text-white text-lg">₹0.00</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Quantity</label>
+                        <input type="number" id="trade-qty" min="1" value="10" oninput="calculateTotal()" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white">
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-semibold border-t border-gray-700 pt-3">
+                        <span class="text-gray-300">Total Deal Value:</span>
+                        <span id="deal-value" class="text-white">₹0.00</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <button onclick="executeTrade('BUY')" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition">BUY</button>
+                        <button onclick="executeTrade('SELL')" class="py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition">SELL</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>My Local Positions</h3>
-        <button onclick="clearPortfolio()" style="padding:4px 8px; font-size:12px; border-color:var(--put-color); color:var(--put-color)">Clear All</button>
-      </div>
-      <div id="portfolioBody"></div>
-    </div>
-  </div>
-</div>
+        <!-- Right Column: Holdings & History -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Holdings -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h2 class="text-lg font-bold mb-4 text-gray-300 border-b border-gray-700 pb-2">📊 Current Holdings</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-sm">
+                                <th class="pb-3">Symbol</th>
+                                <th class="pb-3">Qty</th>
+                                <th class="pb-3">Avg Price</th>
+                                <th class="pb-3">Current Price</th>
+                                <th class="pb-3 text-right">P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-table" class="divide-y divide-gray-700 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-<script>
-  let nseRawPayload = null;
+            <!-- History -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <h2 class="text-lg font-bold mb-4 text-gray-300 border-b border-gray-700 pb-2">📜 Transaction Log</h2>
+                <div class="overflow-y-auto max-h-60">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-sm">
+                                <th class="pb-3">Time</th>
+                                <th class="pb-3">Symbol</th>
+                                <th class="pb-3">Type</th>
+                                <th class="pb-3">Qty</th>
+                                <th class="pb-3 text-right">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table" class="divide-y divide-gray-700 text-xs text-gray-400">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
 
-  window.onload = function() {
-    loadLocalJson();
-    renderPortfolio();
-  };
+    <script>
+        // --- State Management ---
+        let marketData = { updated_at: "N/A", prices: {} };
+        let userState = {
+            cash: 1000000.0,
+            portfolio: {}, // { "SYMBOL": { qty, avg_price } }
+            history: []    // [ { time, symbol, action, qty, price } ]
+        };
 
-  async function loadLocalJson() {
-    document.getElementById('matrixLoader').style.display = "block";
-    document.getElementById('tableWrapper').style.display = "none";
+        // Format Currency
+        const fmt = (num) => "₹" + parseFloat(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    try {
-      const res = await fetch('./data.json?cache_bust=' + new Date().getTime());
-      if (!res.ok) throw new Error("Missing File");
-      
-      const data = await res.json();
-      nseRawPayload = data;
-      
-      document.getElementById('underlying-price').innerText = `Spot Price: ${data.records.underlyingValue}`;
-      
-      const expirySelect = document.getElementById('expirySelect');
-      expirySelect.innerHTML = "";
-      data.records.expiryDates.forEach(date => {
-        let opt = document.createElement('option');
-        opt.value = date; opt.innerText = date;
-        expirySelect.appendChild(opt);
-      });
+        // Load data on start
+        async function init() {
+            // Load state from LocalStorage
+            const stored = localStorage.getItem("paper_trading_state");
+            if (stored) {
+                userState = JSON.parse(stored);
+            }
 
-      renderMatrixUI();
-    } catch (err) {
-      document.getElementById('matrixLoader').innerHTML = `
-        <span style="color:var(--put-color); font-weight:bold;">Initializing options data storage...</span><br><br>
-        Please launch the GitHub Actions engine workflow manually to compile the initial option dataset.
-      `;
-    }
-  }
+            // Fetch prices from prices.json (generated by GitHub Action)
+            try {
+                const res = await fetch("./prices.json");
+                marketData = await res.json();
+                document.getElementById("last-update").innerText = marketData.updated_at;
+            } catch (err) {
+                console.error("Could not fetch prices.json. Mocking stock prices instead.", err);
+                marketData = {
+                    updated_at: "Simulated",
+                    prices: { "SBIN": 840.50, "RELIANCE": 2450.25, "TCS": 4120.00, "INFY": 1510.10, "TATAMOTORS": 980.40, "HDFCBANK": 1610.75 }
+                };
+                document.getElementById("last-update").innerText = "Using Offline Fallbacks";
+            }
 
-  function renderMatrixUI() {
-    if(!nseRawPayload) return;
-    const selectedExpiry = document.getElementById('expirySelect').value;
-    const tableBody = document.getElementById('optionChainBody');
-    tableBody.innerHTML = "";
+            populateDropdown();
+            updateDashboard();
+        }
 
-    nseRawPayload.filtered.data.forEach(row => {
-      if(row.expiryDate !== selectedExpiry) return;
+        function saveState() {
+            localStorage.setItem("paper_trading_state", JSON.stringify(userState));
+        }
 
-      const tr = document.createElement('tr');
-      const ceLtp = row.CE ? row.CE.lastPrice : '-';
-      const ceOi = row.CE ? row.CE.openInterest : '-';
-      const peLtp = row.PE ? row.PE.lastPrice : '-';
-      const peOi = row.PE ? row.PE.openInterest : '-';
-      const strike = row.strikePrice;
+        function populateDropdown() {
+            const select = document.getElementById("trade-symbol");
+            select.innerHTML = "";
+            Object.keys(marketData.prices).forEach(symbol => {
+                const opt = document.createElement("option");
+                opt.value = symbol;
+                opt.innerText = symbol;
+                select.appendChild(opt);
+            });
+            updateTradePrice();
+        }
 
-      tr.innerHTML = `
-        <td class="ce-zone">${ceOi}</td>
-        <td class="ce-zone" style="font-weight:600; color:var(--call-color)">${ceLtp}</td>
-        <td class="ce-zone"><button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp})">B</button></td>
-        <td class="strike-row">${strike}</td>
-        <td class="pe-zone"><button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','PE',${peLtp})">B</button></td>
-        <td class="pe-zone" style="font-weight:600; color:var(--put-color)">${peLtp}</td>
-        <td class="pe-zone">${peOi}</td>
-      `;
-      tableBody.appendChild(tr);
-    });
+        function updateTradePrice() {
+            const sym = document.getElementById("trade-symbol").value;
+            const price = marketData.prices[sym] || 0.00;
+            document.getElementById("current-asset-price").innerText = fmt(price);
+            calculateTotal();
+        }
 
-    document.getElementById('matrixLoader').style.display = "none";
-    document.getElementById('tableWrapper').style.display = "block";
-  }
+        function calculateTotal() {
+            const sym = document.getElementById("trade-symbol").value;
+            const price = marketData.prices[sym] || 0.00;
+            const qty = parseInt(document.getElementById("trade-qty").value) || 0;
+            document.getElementById("deal-value").innerText = fmt(price * qty);
+        }
 
-  function savePaperTrade(strike, type, price) {
-    if(!price || price === '-') return alert("Invalid price execution quote.");
-    let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    trades.push({ symbol: 'NIFTY', strike, type, entryPrice: price });
-    localStorage.setItem('local_portfolio', JSON.stringify(trades));
-    renderPortfolio();
-  }
+        function updateDashboard() {
+            // Update Core Metrics
+            document.getElementById("wallet-cash").innerText = fmt(userState.cash);
+            
+            let totalPortfolioValue = 0;
+            const holdingsBody = document.getElementById("holdings-table");
+            holdingsBody.innerHTML = "";
 
-  function renderPortfolio() {
-    const container = document.getElementById('portfolioBody');
-    let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    if(trades.length === 0) { container.innerHTML = '<p style="color:var(--text-muted)">No open positions.</p>'; return; }
-    let html = '<table><thead><tr><th>Asset</th><th>Price</th></tr></thead><tbody>';
-    trades.forEach(t => { html += `<tr><td><b>${t.symbol}</b> ${t.strike} ${t.type}</td><td>₹${t.entryPrice}</td></tr>`; });
-    container.innerHTML = html + '</tbody></table>';
-  }
+            Object.keys(userState.portfolio).forEach(symbol => {
+                const hold = userState.portfolio[symbol];
+                const currentPrice = marketData.prices[symbol] || hold.avg_price;
+                const value = hold.qty * currentPrice;
+                totalPortfolioValue += value;
 
-  function clearPortfolio() {
-    localStorage.removeItem('local_portfolio');
-    renderPortfolio();
-  }
-</script>
+                const pnl = value - (hold.qty * hold.avg_price);
+                const pnlClass = pnl >= 0 ? "text-emerald-400" : "text-rose-500";
+
+                const row = `
+                    <tr>
+                        <td class="py-3 font-semibold">${symbol}</td>
+                        <td class="py-3">${hold.qty}</td>
+                        <td class="py-3">${fmt(hold.avg_price)}</td>
+                        <td class="py-3">${fmt(currentPrice)}</td>
+                        <td class="py-3 text-right ${pnlClass} font-bold">${fmt(pnl)}</td>
+                    </tr>
+                `;
+                holdingsBody.innerHTML += row;
+            });
+
+            const netWorth = userState.cash + totalPortfolioValue;
+            document.getElementById("portfolio-value").innerText = fmt(totalPortfolioValue);
+            document.getElementById("net-worth").innerText = fmt(netWorth);
+
+            // Populate Log Table
+            const historyBody = document.getElementById("history-table");
+            historyBody.innerHTML = "";
+            [...userState.history].reverse().forEach(tx => {
+                const actionClass = tx.action === "BUY" ? "text-emerald-400" : "text-rose-500";
+                const row = `
+                    <tr>
+                        <td class="py-2">${tx.time}</td>
+                        <td class="py-2 font-semibold">${tx.symbol}</td>
+                        <td class="py-2 font-bold ${actionClass}">${tx.action}</td>
+                        <td class="py-2">${tx.qty}</td>
+                        <td class="py-2 text-right">${fmt(tx.price)}</td>
+                    </tr>
+                `;
+                historyBody.innerHTML += row;
+            });
+        }
+
+        function executeTrade(action) {
+            const sym = document.getElementById("trade-symbol").value;
+            const price = marketData.prices[sym] || 0.00;
+            const qty = parseInt(document.getElementById("trade-qty").value) || 0;
+            const totalCost = price * qty;
+
+            if (qty <= 0) return alert("Please enter a valid quantity.");
+
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            if (action === "BUY") {
+                if (userState.cash < totalCost) return alert("Insufficient cash funds!");
+                userState.cash -= totalCost;
+
+                if (userState.portfolio[sym]) {
+                    const existing = userState.portfolio[sym];
+                    const newQty = existing.qty + qty;
+                    const newAvg = ((existing.qty * existing.avg_price) + totalCost) / newQty;
+                    userState.portfolio[sym] = { qty: newQty, avg_price: newAvg };
+                } else {
+                    userState.portfolio[sym] = { qty: qty, avg_price: price };
+                }
+            } else if (action === "SELL") {
+                if (!userState.portfolio[sym] || userState.portfolio[sym].qty < qty) {
+                    return alert("You don't own enough shares of this stock!");
+                }
+                userState.cash += totalCost;
+                userState.portfolio[sym].qty -= qty;
+                if (userState.portfolio[sym].qty === 0) {
+                    delete userState.portfolio[sym];
+                }
+            }
+
+            userState.history.push({ time: now, symbol: sym, action: action, qty: qty, price: price });
+            saveState();
+            updateDashboard();
+        }
+
+        function resetPortfolio() {
+            if (confirm("Reset account back to ₹10 Lakhs? This deletes holding history.")) {
+                userState = { cash: 1000000.0, portfolio: {}, history: [] };
+                saveState();
+                updateDashboard();
+            }
+        }
+
+        window.onload = init;
+    </script>
 </body>
 </html>
