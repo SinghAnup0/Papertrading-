@@ -3,36 +3,38 @@ import json
 import sys
 
 def get_nse_data():
-    # Target endpoints
-    home_url = "https://www.nseindia.com/"
+    home_url = "https://www.nseindia.com/option-chain"
     api_url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
     
-    # Matching typical browser header finger-prints
+    # Precise browser headers required to pass the cloud security inspection
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        "Referer": "https://www.nseindia.com/option-chain",
+        "X-Requested-With": "XMLHttpRequest"
     }
     
     session = requests.Session()
     session.headers.update(headers)
     
     try:
-        # Step 1: Grab verification cookies from the home domain
+        # Step 1: Hit the specific option chain UI view to secure cookies
         session.get(home_url, timeout=15)
         
-        # Step 2: Request the actual JSON matrix payload
+        # Step 2: Extract data with validation cookies attached
         response = session.get(api_url, timeout=15)
         
         if response.status_code == 200:
-            # Confirming valid structural data was returned
             payload = response.json()
             with open("data.json", "w") as f:
                 json.dump(payload, f, indent=2)
-            print("Data stream synchronized successfully.")
+            print("Successfully synchronized data.json.")
         else:
             print(f"NSE responded with error status: {response.status_code}")
+            # Print response body snippets to assist troubleshooting if throttled
+            print(response.text[:200])
             sys.exit(1)
             
     except Exception as e:
