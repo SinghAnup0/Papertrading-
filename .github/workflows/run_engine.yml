@@ -18,11 +18,9 @@ jobs:
         python-version: '3.10'
 
     - name: Install Request Middleware
-      run: pip install requests
+      run: pip install requests tls-client
 
     - name: Execute Python Cookie Exchange Fetch
-      env:
-        NSE_RAW_COOKIE: ${{ secrets.NSE_COOKIE }}
       run: python fetch.py
 
     - name: Push Dynamic Payload to GitHub Pages Output
