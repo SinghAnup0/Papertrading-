@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sensibull-Lite GitHub Paper Trader</title>
+  <title>Sensibull-Lite Proxy-Free Trader</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -19,36 +19,20 @@
       font-family: 'Segoe UI', Arial, sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-main);
-      margin: 0;
-      padding: 20px;
+      margin: 0; padding: 20px;
     }
     .container { max-width: 1400px; margin: 0 auto; }
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #374151;
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 20px; border-bottom: 1px solid #374151;
     }
-    .logo { font-size: 24px; font-weight: 700; color: var(--accent); }
     .controls { display: flex; gap: 15px; margin: 20px 0; align-items: center; }
     select, button {
-      background-color: var(--card-bg);
-      color: white;
-      border: 1px solid #4b5563;
-      padding: 10px 15px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
+      background-color: var(--card-bg); color: white;
+      border: 1px solid #4b5563; padding: 10px 15px; border-radius: 6px; cursor: pointer;
     }
-    button.btn-primary { background-color: var(--accent); border: none; }
     .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-    }
+    .card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
     th { background-color: #111827; color: var(--text-muted); padding: 10px; }
     td { padding: 10px; border-bottom: 1px solid #374151; }
@@ -58,32 +42,25 @@
     .action-btn { padding: 4px 10px; font-size: 11px; margin: 2px; border-radius: 4px; color: white; cursor:pointer;}
     .buy-btn { background: var(--call-color); border: none; }
     .sell-btn { background: var(--put-color); border: none; }
-    .loader { text-align: center; padding: 40px; font-size: 15px; color: var(--text-muted); }
   </style>
 </head>
 <body>
 
 <div class="container">
   <header>
-    <div class="logo"><i class="fa-solid fa-chart-line"></i> Sensibull-Lite Serverless Trader</div>
-    <div id="underlying-price" style="font-weight:600;">Spot Price: Fetching...</div>
+    <div><i class="fa-solid fa-chart-line"></i> Native GitHub Paper Trader (No Proxy)</div>
+    <div id="underlying-price" style="font-weight:600;">Spot Price: Fetching JSON...</div>
   </header>
 
   <div class="controls">
-    <select id="symbolSelect" onchange="loadNseOptionChain()">
-      <option value="NIFTY">NIFTY (Index)</option>
-      <option value="BANKNIFTY">BANKNIFTY (Index)</option>
-      <option value="FINNIFTY">FINNIFTY (Index)</option>
-    </select>
     <select id="expirySelect" onchange="renderMatrixUI()"></select>
-    <button class="btn-primary" onclick="loadNseOptionChain()"><i class="fa-solid fa-sync"></i> Refresh Matrix</button>
+    <button onclick="loadLocalJson()"><i class="fa-solid fa-sync"></i> Refresh Data</button>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h3>Live Option Chain Matrix</h3>
-      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Establishing data stream pipeline...</div>
-      <div id="tableWrapper" style="display:none; max-height: 600px; overflow-y: auto;">
+      <h3>Live Option Chain Matrix (NIFTY)</h3>
+      <div id="tableWrapper">
         <table>
           <thead>
             <tr>
@@ -95,7 +72,7 @@
               <th>OI</th>
               <th>LTP</th>
               <th>Action</th>
-              <th>Strike Price</th>
+              <th>Strike</th>
               <th>Action</th>
               <th>LTP</th>
               <th>OI</th>
@@ -107,10 +84,7 @@
     </div>
 
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>My Local Positions</h3>
-        <button onclick="clearPortfolio()" style="padding:4px 8px; font-size:12px; border-color:var(--put-color); color:var(--put-color)">Clear All</button>
-      </div>
+      <h3>My Local Positions</h3>
       <div id="portfolioBody"></div>
     </div>
   </div>
@@ -120,24 +94,14 @@
   let nseRawPayload = null;
 
   window.onload = function() {
-    loadNseOptionChain();
+    loadLocalJson();
     renderPortfolio();
   };
 
-  async function loadNseOptionChain() {
-    const symbol = document.getElementById('symbolSelect').value;
-    document.getElementById('matrixLoader').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Parsing live data from NSE...`;
-    document.getElementById('matrixLoader').style.display = "block";
-    document.getElementById('tableWrapper').style.display = "none";
-
-    // Replaced with AllOrigins raw proxy format to support live domains like github.io
-    const proxyUrl = "https://api.allorigins.win/raw?url=";
-    const targetUrl = `https://www.nseindia.com/api/option-chain-indices?symbol=${encodeURIComponent(symbol)}`;
-
+  async function loadLocalJson() {
     try {
-      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-      if (!res.ok) throw new Error("NSE Response Interrupted.");
-      
+      // Direct call to your own repository file without any proxies
+      const res = await fetch('./data.json?cache_bust=' + new Date().getTime());
       const data = await res.json();
       nseRawPayload = data;
       
@@ -153,7 +117,8 @@
 
       renderMatrixUI();
     } catch (err) {
-      document.getElementById('matrixLoader').innerHTML = `<span style="color:var(--put-color)">Failed to fetch live data. Please clear your cache and hit refresh in a moment.</span>`;
+      console.error(err);
+      document.getElementById('underlying-price').innerText = "Data JSON initializing. Please trigger the GitHub Action manually to start.";
     }
   }
 
@@ -175,61 +140,31 @@
 
       tr.innerHTML = `
         <td class="ce-zone">${ceOi}</td>
-        <td class="ce-zone" style="font-weight:600; color:var(--call-color)">${ceLtp}</td>
-        <td class="ce-zone">
-          <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp},'BUY')">B</button>
-          <button class="action-btn sell-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp},'SELL')">S</button>
-        </td>
+        <td class="ce-zone" style="color:var(--call-color)">${ceLtp}</td>
+        <td class="ce-zone"><button class="action-btn buy-btn" onclick="saveTrade('${strike}','CE',${ceLtp})">B</button></td>
         <td class="strike-row">${strike}</td>
-        <td class="pe-zone">
-          <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','PE',${peLtp},'BUY')">B</button>
-          <button class="action-btn sell-btn" onclick="savePaperTrade('${strike}','PE',${peLtp},'SELL')">S</button>
-        </td>
-        <td class="pe-zone" style="font-weight:600; color:var(--put-color)">${peLtp}</td>
+        <td class="pe-zone"><button class="action-btn buy-btn" onclick="saveTrade('${strike}','PE',${peLtp})">B</button></td>
+        <td class="pe-zone" style="color:var(--put-color)">${peLtp}</td>
         <td class="pe-zone">${peOi}</td>
       `;
       tableBody.appendChild(tr);
     });
-
-    document.getElementById('matrixLoader').style.display = "none";
-    document.getElementById('tableWrapper').style.display = "block";
   }
 
-  function savePaperTrade(strike, type, price, action) {
-    if(!price || price === '-') return alert("Price quote missing.");
-    const symbol = document.getElementById('symbolSelect').value;
-    
-    let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    trades.push({ symbol, strike, type, entryPrice: price, action, time: new Date().toLocaleTimeString() });
-    
-    localStorage.setItem('local_portfolio', JSON.stringify(trades));
+  function saveTrade(strike, type, price) {
+    let trades = localStorage.getItem('trades') ? JSON.parse(localStorage.getItem('trades')) : [];
+    trades.push({ strike, type, price, time: new Date().toLocaleTimeString() });
+    localStorage.setItem('trades', JSON.stringify(trades));
     renderPortfolio();
   }
 
   function renderPortfolio() {
     const container = document.getElementById('portfolioBody');
-    let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    
-    if(trades.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-muted)">No open positions stored in this browser session.</p>';
-      return;
-    }
-    
-    let html = '<table><thead><tr><th>Asset</th><th>Action</th><th>Entry</th></tr></thead><tbody>';
-    trades.forEach(t => {
-      html += `<tr>
-        <td><b>${t.symbol}</b> ${t.strike} ${t.type}</td>
-        <td style="color:${t.action === 'BUY' ? 'var(--call-color)': 'var(--put-color)'}">${t.action}</td>
-        <td>₹${t.entryPrice} <small style="display:block;font-size:10px;color:var(--text-muted)">${t.time}</small></td>
-      </tr>`;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  }
-
-  function clearPortfolio() {
-    localStorage.removeItem('local_portfolio');
-    renderPortfolio();
+    let trades = localStorage.getItem('trades') ? JSON.parse(localStorage.getItem('trades')) : [];
+    if(trades.length === 0) { container.innerHTML = '<p>No open positions.</p>'; return; }
+    let html = '<table>';
+    trades.forEach(t => { html += `<tr><td>NIFTY ${t.strike} ${t.type}</td><td>₹${t.price}</td></tr>`; });
+    container.innerHTML = html + '</table>';
   }
 </script>
 </body>
