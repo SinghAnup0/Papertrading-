@@ -19,36 +19,22 @@
       font-family: 'Segoe UI', Arial, sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-main);
-      margin: 0;
-      padding: 20px;
+      margin: 0; padding: 20px;
     }
     .container { max-width: 1400px; margin: 0 auto; }
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #374151;
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 20px; border-bottom: 1px solid #374151;
     }
     .logo { font-size: 24px; font-weight: 700; color: var(--accent); }
     .controls { display: flex; gap: 15px; margin: 20px 0; align-items: center; }
     select, button {
-      background-color: var(--card-bg);
-      color: white;
-      border: 1px solid #4b5563;
-      padding: 10px 15px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
+      background-color: var(--card-bg); color: white;
+      border: 1px solid #4b5563; padding: 10px 15px; border-radius: 6px; font-size: 14px; cursor: pointer;
     }
     button.btn-primary { background-color: var(--accent); border: none; }
     .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-    }
+    .card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
     table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
     th { background-color: #111827; color: var(--text-muted); padding: 10px; }
     td { padding: 10px; border-bottom: 1px solid #374151; }
@@ -75,10 +61,9 @@
   </div>
 
   <div class="grid">
-    <!-- Live Option Matrix View -->
     <div class="card">
       <h3>Live Option Chain Matrix (NIFTY)</h3>
-      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Reading local repository bundle...</div>
+      <div id="matrixLoader" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Reading repository bundle...</div>
       <div id="tableWrapper" style="display:none; max-height: 600px; overflow-y: auto;">
         <table>
           <thead>
@@ -102,7 +87,6 @@
       </div>
     </div>
 
-    <!-- Storage Local Portfolio Component -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3>My Local Positions</h3>
@@ -126,9 +110,8 @@
     document.getElementById('tableWrapper').style.display = "none";
 
     try {
-      // Pulling directly from your own domain workspace repo to dodge CORS security
       const res = await fetch('./data.json?cache_bust=' + new Date().getTime());
-      if (!res.ok) throw new Error("JSON file target not found.");
+      if (!res.ok) throw new Error("JSON missing.");
       
       const data = await res.json();
       nseRawPayload = data;
@@ -146,8 +129,8 @@
       renderMatrixUI();
     } catch (err) {
       document.getElementById('matrixLoader').innerHTML = `
-        <span style="color:var(--put-color); font-weight:bold;">data.json initialization required!</span><br><br>
-        Please open the **Actions** tab in your GitHub repository and trigger the Python script workflow to generate the initial file.
+        <span style="color:var(--put-color); font-weight:bold;">data.json generating...</span><br><br>
+        Please trigger the GitHub Action manually to start the first scrape.
       `;
     }
   }
@@ -173,12 +156,10 @@
         <td class="ce-zone" style="font-weight:600; color:var(--call-color)">${ceLtp}</td>
         <td class="ce-zone">
           <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp},'BUY')">B</button>
-          <button class="action-btn sell-btn" onclick="savePaperTrade('${strike}','CE',${ceLtp},'SELL')">S</button>
         </td>
         <td class="strike-row">${strike}</td>
         <td class="pe-zone">
           <button class="action-btn buy-btn" onclick="savePaperTrade('${strike}','PE',${peLtp},'BUY')">B</button>
-          <button class="action-btn sell-btn" onclick="savePaperTrade('${strike}','PE',${peLtp},'SELL')">S</button>
         </td>
         <td class="pe-zone" style="font-weight:600; color:var(--put-color)">${peLtp}</td>
         <td class="pe-zone">${peOi}</td>
@@ -191,11 +172,9 @@
   }
 
   function savePaperTrade(strike, type, price, action) {
-    if(!price || price === '-') return alert("Price context unavailable.");
-    
+    if(!price || price === '-') return alert("Price quote missing.");
     let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    trades.push({ symbol: 'NIFTY', strike, type, entryPrice: price, action, time: new Date().toLocaleTimeString() });
-    
+    trades.push({ symbol: 'NIFTY', strike, type, entryPrice: price, action: 'BUY', time: new Date().toLocaleTimeString() });
     localStorage.setItem('local_portfolio', JSON.stringify(trades));
     renderPortfolio();
   }
@@ -203,22 +182,10 @@
   function renderPortfolio() {
     const container = document.getElementById('portfolioBody');
     let trades = localStorage.getItem('local_portfolio') ? JSON.parse(localStorage.getItem('local_portfolio')) : [];
-    
-    if(trades.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-muted)">No active paper execution positions.</p>';
-      return;
-    }
-    
-    let html = '<table><thead><tr><th>Asset</th><th>Action</th><th>Entry Price</th></tr></thead><tbody>';
-    trades.forEach(t => {
-      html += `<tr>
-        <td><b>${t.symbol}</b> ${t.strike} ${t.type}</td>
-        <td style="color:${t.action === 'BUY' ? 'var(--call-color)': 'var(--put-color)'}">${t.action}</td>
-        <td>₹${t.entryPrice} <small style="display:block;font-size:10px;color:var(--text-muted)">${t.time}</small></td>
-      </tr>`;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    if(trades.length === 0) { container.innerHTML = '<p style="color:var(--text-muted)">No open positions.</p>'; return; }
+    let html = '<table><thead><tr><th>Asset</th><th>Price</th></tr></thead><tbody>';
+    trades.forEach(t => { html += `<tr><td><b>${t.symbol}</b> ${t.strike} ${t.type}</td><td>₹${t.entryPrice}</td></tr>`; });
+    container.innerHTML = html + '</tbody></table>';
   }
 
   function clearPortfolio() {
